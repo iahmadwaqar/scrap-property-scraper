@@ -11,7 +11,7 @@ class Ten11ScheduleAndScrapePropertiesData
     {
         $this->client = $client;
         if (false === wp_next_scheduled('SCRAPE_PROPERTIES_EVENT')) {
-            wp_schedule_event(time(), 'every_minute', 'SCRAPE_PROPERTIES_EVENT');
+            wp_schedule_event(time(), 'every_two_minute', 'SCRAPE_PROPERTIES_EVENT');
             $this->logMessage('Scheduled Every minute scraping event for properties.');
         }
         add_action('SCRAPE_PROPERTIES_EVENT', array($this, 'setupScrapePropertyCronEvent'));

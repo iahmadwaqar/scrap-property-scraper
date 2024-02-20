@@ -9,21 +9,28 @@ class Ten11ScheduleAndScrapeProvincesData
 
     public function __construct(Client $client)
     {
+        add_action('wp_ajax_get_new_properties', array($this, 'get_new_properties_setup'));
+        add_action('wp_ajax_nopriv_get_new_properties', array($this, 'get_new_properties_setup'));
         $this->client = $client;
-        if (false === wp_next_scheduled('SCRAPE_PROVINCE_EVENT')) {
+        // if (false === wp_next_scheduled('SCRAPE_PROVINCE_EVENT')) {
 
-            wp_schedule_event(time(), 'monthly', 'SCRAPE_PROVINCE_EVENT');
-            $this->logMessage('Scheduled Monthly scraping event.');
-        }
+        //     wp_schedule_event(time(), 'monthly', 'SCRAPE_PROVINCE_EVENT');
+        //     $this->logMessage('Scheduled Monthly scraping event.');
+        // }
         add_action('SCRAPE_PROVINCE_EVENT', array($this, 'setupScrapeProvinceCronEvent'));
     }
 
+    public function get_new_properties_setup()
+    {
+        wp_schedule_single_event(time(),'SCRAPE_PROVINCE_EVENT');
+        wp_send_json_success(date('Y-m-d H:i:s',wp_next_scheduled('SCRAPE_PROVINCE_EVENT')));
+    }
     public function setupScrapeProvinceCronEvent()
     {
         global $wpdb;
         // $this->emptyProvincesTable($wpdb);
         // $this->emptyPropertiesTable($wpdb);
-        $this->scrapeAndStoreProvincesData($wpdb);
+        // $this->scrapeAndStoreProvincesData($wpdb);
     }
     private function emptyProvincesTable($wpdb)
     {

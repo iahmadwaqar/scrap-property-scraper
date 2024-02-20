@@ -11,9 +11,11 @@ require_once __DIR__ . '/1011-config.php';
 require_once __DIR__ . '/includes/class-ten11-plugin-setup.php';
 require_once __DIR__ . '/includes/class-ten11-schedule-and-scrape-provinces.php';
 require_once __DIR__ . '/includes/class-ten11-schedule-and-scrape-properties.php';
+require_once __DIR__ . '/includes/class-ten11-schedule-and-sync-properties.php';
 
 
 $plugin_setup = new Ten11PluginSetup();
 
-$propertyScrappingProvincesSetup  = new Ten11ScheduleAndScrapeProvincesData($client);
-$propertyScrappingPropertiesSetup  = new Ten11ScheduleAndScrapePropertiesData($client);
+$propertyScrappingProvincesSetup = new Ten11ScheduleAndScrapeProvincesData($client);
+$propertyScrappingPropertiesSetup = new Ten11ScheduleAndScrapePropertiesData($client);
+$propertySyncingPropertiesSetup = new Ten11ScheduleAndSyncProperties();

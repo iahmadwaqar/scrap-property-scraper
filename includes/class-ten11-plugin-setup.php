@@ -8,6 +8,7 @@ class Ten11PluginSetup
     {
         add_action('admin_menu', array($this, 'property_scraper_menu'));
         add_filter('cron_schedules', array($this, 'add_every_minute_cron_interval'));
+        add_filter('cron_schedules', array($this, 'add_every_two_minute_cron_interval'));
         add_filter('cron_schedules', array($this, 'add_monthly_cron_interval'));
 
         register_activation_hook(__FILE__, array($this, 'activate'));
@@ -27,8 +28,12 @@ class Ten11PluginSetup
         }
 
         if (false === wp_next_scheduled('SCRAPE_PROPERTIES_EVENT')) {
-            wp_schedule_event(time() + 300, 'every_minute', 'SCRAPE_PROPERTIES_EVENT');
+            wp_schedule_event(time() + 300, 'every_two_minute', 'SCRAPE_PROPERTIES_EVENT');
             $this->logMessage('Scheduled Every minute scraping event for properties.');
+        }
+        if (false === wp_next_scheduled('SYNC_PROPERTIES_EVENT')) {
+            wp_schedule_event(time() + 3600, 'every_minute', 'SYNC_PROPERTIES_EVENT');
+            $this->logMessage('Scheduled Every minute sync event for properties.');
         }
 
     }
@@ -39,18 +44,78 @@ class Ten11PluginSetup
 
     function property_scraper_page()
     {
-        echo '<h1>Property Scraper</h1>';
-        echo '<p>This is the property scraper page.</p>';
-        echo '<p> Next Property Scrap Scheduled at: ' . date('Y-m-d H:i:s', wp_next_scheduled('SCRAPE_PROPERTIES_EVENT')) . '</p>';
-        echo '<p> Next Province Scrap Scheduled at: ' . date('Y-m-d H:i:s', wp_next_scheduled('SCRAPE_PROVINCE_EVENT')) . '</p>';
-        echo '<button id="scrape_provinces_button" >Scrape Provinces</button>';
+        global $wpdb;
+        $query = 'SELECT COUNT(*) as count FROM wp_1011_properties_new';
+        $result = $wpdb->get_row($query);
+        $total_properties = $result->count;
+        $query = 'SELECT COUNT(*) as count FROM wp_1011_properties_new WHERE p_is_synced = 1';
+        $result = $wpdb->get_row($query);
+        $scrapped_properties = $result->count; ?>
+
+
+        <div
+            style="max-width: 600px; margin: 50px auto; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+            <h1 style="font-size: 30px; margin-bottom: 20px;">Property Scraper</h1>
+            <p style="font-size: 20px; margin: 10px 0;">Total Properties:
+                <span style='color: blue;'>
+                    <?php echo $total_properties; ?>
+                </span>
+            </p>
+            <p style="font-size: 20px; margin: 10px 0;">Synced Properties:
+                <span style='color: green;'>
+                    <?php echo $scrapped_properties; ?>
+                </span>
+            </p><button id="ajax-button"
+                style="font-size: 16px; padding: 10px 20px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Get
+                New Properties From Indomio</button>
+        </div>
+
+        <script>
+            // Define the AJAX function
+            function callAjaxFunction() {
+                // Make AJAX call
+                jQuery.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'get_new_properties' // Replace 'my_ajax_function' with your actual AJAX function name
+                    },
+                    success: function (response) {
+                        console.log('AJAX call successful:', response);
+                        // Handle response if needed
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX call error:', error);
+                        // Handle error if needed
+                    }
+                });
+            }
+
+            // Bind click event to the button
+            jQuery('#ajax-button').click(function () {
+                var confirmation = confirm('Are you sure you want to get new properties?');
+                if (confirmation) {
+                    callAjaxFunction();
+                }
+            });
+        </script>
+        <?php
     }
 
     function add_every_minute_cron_interval($schedules)
     {
         $schedules['every_minute'] = array(
-            'interval' => 60, // 1 minutes in seconds
+            'interval' => 30, // 1 minutes in seconds
             'display' => __('Every 1 Minutes'),
+        );
+        return $schedules;
+    }
+
+    function add_every_two_minute_cron_interval($schedules)
+    {
+        $schedules['every_two_minute'] = array(
+            'interval' => 120, // 2 minutes in seconds
+            'display' => __('Every 2 Minutes'),
         );
         return $schedules;
     }
@@ -107,7 +172,8 @@ class Ten11PluginSetup
             p_latitude DECIMAL(10, 8)  NULL,
             p_longitude DECIMAL(11, 8)  NULL,
             p_json_data LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL,
-            p_is_synced TINYINT(1) DEFAULT 0
+            p_is_synced TINYINT(1) DEFAULT 0,
+            p_post_id VARCHAR(255)  NULL
             )";
 
         $this->createTable($wpdb, $table_name, $sql);
@@ -130,6 +196,7 @@ class Ten11PluginSetup
     {
         wp_clear_scheduled_hook('SCRAPE_PROVINCE_EVENT');
         wp_clear_scheduled_hook('SCRAPE_PROPERTIES_EVENT');
+        wp_clear_scheduled_hook('SYNC_PROPERTIES_EVENT');
     }
 
     private function logMessage($message)

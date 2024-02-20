@@ -7,3 +7,4 @@ $client = new Client();
 
 define('SCRAPE_PROVINCE_EVENT', '1011_scrape_province_cron_event');
 define('SCRAPE_PROPERTIES_EVENT', '1011_scrape_properties_cron_event');
+define('SYNC_PROPERTIES_EVENT', '1011_sync_properties_cron_event');
